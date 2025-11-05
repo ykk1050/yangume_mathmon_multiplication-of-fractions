@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>수학몬 마스터1.01- Monster RPG</title>
+  <title>test수학몬 마스터1.02- Monster RPG</title>
   <style>
         body {
             box-sizing: border-box;
@@ -1119,7 +1119,7 @@
   <div class="app-container">
     <div class="header">
       <button class="reset-button" onclick="confirmResetGame()">🔄 초기화</button>
-      <h1 class="app-title">수학몬 마스터_분수의 곱셈</h1>
+      <h1 class="app-title">수학몬 마스터_분수의 곱셈1.02</h1>
       <div class="title-info">
         <div class="current-title" id="currentTitle">⭐ 초보자</div>
         <div class="title-list" id="titleList">
@@ -1912,6 +1912,33 @@
           return; // 함수 종료
       }
       const userImproper = mixedToImproper(wholeInput, numeratorInput, denominatorInput);
+
+      // 👇👇👇 요청하신 기약분수 및 대분수 검증 로직 추가 👇👇👇
+
+      // 3. 🔴 기약분수 체크 (필수)
+      // gcd 함수가 필요합니다. 이 함수가 코드 파일에 정의되어 있는지 확인하세요.
+      if (gcd(userImproper.numerator, userImproper.denominator) !== 1) {
+          feedback.textContent = `❌ 답은 반드시 기약분수 형태로 입력해야 합니다. (예: 2/4는 1/2로 입력)`;
+          feedback.className = 'feedback incorrect';
+          feedback.style.display = 'block';
+          setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+          document.getElementById('captureSubmitBtn').disabled = false; // 버튼 재활성화
+          return; // 볼 소모 없이 종료
+      }
+
+      // 4. 🔴 대분수 강제 입력 체크 (정답이 가분수인 경우)
+      // 정답(gameState.currentAnswer)이 1보다 크거나 같을 경우
+      if (gameState.currentAnswer.numerator >= gameState.currentAnswer.denominator) {
+          // 사용자가 정수부(wholeInput)를 0으로 입력했다면 (가분수 형태로 입력했다면)
+          if (wholeInput === 0) {
+              feedback.textContent = `❌ 답이 1보다 크거나 같으면 반드시 대분수 형태로 입력해야 합니다.`;
+              feedback.className = 'feedback incorrect';
+              feedback.style.display = 'block';
+              setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+              document.getElementById('captureSubmitBtn').disabled = false; // 버튼 재활성화
+              return; // 볼 소모 없이 종료
+          }
+      }
       const userReduced = reduceFraction(userImproper.numerator, userImproper.denominator);
         // --- 🚨 디버깅 코드 시작 🚨 ---
       console.log("--- 정답 비교 디버그 ---");
@@ -2156,6 +2183,10 @@
           const captureRate = calculateCaptureRate(gameState.currentMonster.rarity);
           document.getElementById('captureRateText').textContent = `${Math.round(captureRate)}%`;
           document.getElementById('captureRateInfo').style.display = 'block';
+
+          // 👇👇👇 [핵심 수정: 이 두 줄을 추가해야 합니다] 👇👇👇
+          document.getElementById('quizSection').style.display = 'block'; // 퀴즈 영역을 다시 보이게 함
+          generateCaptureQuiz(); // 새 문제를 생성함
         }
         
 
@@ -2200,113 +2231,132 @@
     }
 
       function submitCaptureAnswer() {
-      // [1번 문제 수정] : 더블클릭 방지를 위해 버튼을 즉시 '잠급(비활성화)'니다.
+      // 1. 더블클릭 방지를 위해 버튼을 즉시 '잠급(비활성화)'니다.
       document.getElementById('captureSubmitBtn').disabled = true;
+
+      const feedback = document.getElementById('captureQuizFeedback');
 
       if (!gameState.selectedBall) {
           showNotification('포획볼을 먼저 선택하세요!');
-          // [1번 문제 수정] : 오류 발생 시 버튼을 다시 '풉(활성화)'니다.
           document.getElementById('captureSubmitBtn').disabled = false;
           return;
       }
 
-      // --- [3-2번 문제 수정 시작] : 볼을 소모하기 전에 입력값 검증 ---
+      // --- 1단계: 입력값 가져오기 및 유효성 검사 (볼 소모 방지) ---
       const wholeValue = document.getElementById('captureWholeInput').value;
       const numeratorValue = document.getElementById('captureNumeratorInput').value;
       const denominatorValue = document.getElementById('captureDenominatorInput').value;
-      const feedback = document.getElementById('captureQuizFeedback');
 
-      // 1. 분자 또는 분모가 비어있는지 검사
+      // 분자 또는 분모가 비어있는지 검사 (❌ "볼이 소모되었습니다" 메시지 삭제)
       if (numeratorValue === '' || denominatorValue === '') {
           feedback.textContent = `❌ 분자와 분모를 모두 입력해야 합니다.`;
           feedback.className = 'feedback incorrect';
           feedback.style.display = 'block';
           setTimeout(() => { feedback.style.display = 'none'; }, 2000);
-          
-          // [3-2 수정] : 오류 시 버튼을 다시 '풉니다'.
           document.getElementById('captureSubmitBtn').disabled = false;
-          return; // 함수 종료 (볼 소모 안 함)
+          return; // 볼 소모 없이 종료
       }
       
       const wholeInput = parseInt(wholeValue) || 0;
       const numeratorInput = parseInt(numeratorValue) || 0;
-      // [3-2 수정] : 분모가 비어있을 때 1로 바뀌는 '|| 1' 로직을 제거했습니다.
       const denominatorInput = parseInt(denominatorValue); 
 
-      // 2. 분모가 0이거나 숫자가 아닌지 검사
+      // 분모가 0이거나 숫자가 아닌지 검사 (❌ "볼이 소모되었습니다" 메시지 삭제)
       if (isNaN(denominatorInput) || denominatorInput === 0) {
           feedback.textContent = `❌ 분모는 0이 될 수 없습니다. (1 이상의 숫자)`;
           feedback.className = 'feedback incorrect';
           feedback.style.display = 'block';
           setTimeout(() => { feedback.style.display = 'none'; }, 2000);
-          
-          // [3-2 수정] : 오류 시 버튼을 다시 '풉니다'.
           document.getElementById('captureSubmitBtn').disabled = false;
-          return; // 함수 종료 (볼 소모 안 함)
+          return; // 볼 소모 없이 종료
       }
-      // --- [3-2번 문제 수정 끝] ---
-
       
-      // [3-2 수정] : 모든 검증을 통과한 후에야 포획볼을 소모합니다. (위치 변경)
+      // 💡 핵심 수정: userImproper 변수를 여기서 정의해야 합니다! (순서 수정)
+      const userImproper = mixedToImproper(wholeInput, numeratorInput, denominatorInput); 
+
+      // --- 2단계: 요청하신 정답 형식 검증 ---
+
+      // 🔴 3. 기약분수 체크 (필수)
+      if (gcd(userImproper.numerator, userImproper.denominator) !== 1) {
+          feedback.textContent = `❌ 답은 반드시 기약분수 형태로 입력해야 합니다. (예: 2/4는 1/2로 입력)`;
+          feedback.className = 'feedback incorrect';
+          feedback.style.display = 'block';
+          setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+          document.getElementById('captureSubmitBtn').disabled = false;
+          return; // 볼 소모 없이 종료
+      }
+
+      // 🔴 4. 대분수 강제 입력 체크 (정답이 가분수인 경우)
+      if (gameState.currentAnswer.numerator >= gameState.currentAnswer.denominator) {
+          if (wholeInput === 0) {
+              feedback.textContent = `❌ 답이 1보다 크거나 같으면 반드시 대분수 형태로 입력해야 합니다.`;
+              feedback.className = 'feedback incorrect';
+              feedback.style.display = 'block';
+              setTimeout(() => { feedback.style.display = 'none'; }, 2000);
+              document.getElementById('captureSubmitBtn').disabled = false;
+              return; // 볼 소모 없이 종료
+          }
+      }
+      
+      // --- 3단계: 모든 검증 통과 후 볼 소모 ---
       gameState.ballInventory[gameState.selectedBall]--;
 
-      // 이제 모든 입력값이 유효하므로 정답을 비교합니다.
-      const userImproper = mixedToImproper(wholeInput, numeratorInput, denominatorInput);
+      // 이제 정답을 비교합니다.
       const userReduced = reduceFraction(userImproper.numerator, userImproper.denominator);
       const isCorrect = userReduced.numerator === gameState.currentAnswer.numerator && userReduced.denominator === gameState.currentAnswer.denominator;
 
       if (isCorrect) {
-        const captureRate = calculateCaptureRate(gameState.currentMonster.rarity);
-        const captureRoll = Math.random() * 100;
-        feedback.textContent = `정답! 포획을 시도합니다... (성공 확률: ${Math.round(captureRate)}%)`;
-        feedback.className = 'feedback correct';
-        feedback.style.display = 'block';
-        
-        setTimeout(() => {
-          if (captureRoll <= captureRate) {
-            captureSuccess();
-          } else {
-            feedback.textContent = `앗, 몬스터가 볼에서 튀어나왔다! 포획에 실패했다!`;
-            feedback.className = 'feedback incorrect';
-            setTimeout(() => {
-              const escapeChance = Math.random() * 100;
-              if (escapeChance <= 15) {
-                showNotification(`💨 ${gameState.currentMonster.name}이(가) 도망쳤습니다!`);
-                resetCapture();
+          const captureRate = calculateCaptureRate(gameState.currentMonster.rarity);
+          const captureRoll = Math.random() * 100;
+          feedback.textContent = `정답! 포획을 시도합니다... (성공 확률: ${Math.round(captureRate)}%)`;
+          feedback.className = 'feedback correct';
+          feedback.style.display = 'block';
+          
+          setTimeout(() => {
+              if (captureRoll <= captureRate) {
+                  captureSuccess();
               } else {
-                feedback.textContent = `${gameState.currentMonster.name}이(가) 저항합니다. 다시 시도하세요!`;
-                updateCaptureBallSelection();
-                document.getElementById("captureWholeInput").value = "";
-                document.getElementById("captureNumeratorInput").value = "";
-                document.getElementById("captureDenominatorInput").value = "";
-                document.getElementById("captureWholeInput").focus();
-                generateCaptureQuiz(); // <-- 이 한 줄을 추가합니다.
-                document.getElementById('captureSubmitBtn').disabled = false;
+                  feedback.textContent = `앗, 몬스터가 볼에서 튀어나왔다! 포획에 실패했다!`;
+                  feedback.className = 'feedback incorrect';
+                  setTimeout(() => {
+                      const escapeChance = Math.random() * 100;
+                      if (escapeChance <= 30) {
+                          showNotification(`💨 ${gameState.currentMonster.name}이(가) 도망쳤습니다!`);
+                          resetCapture();
+                      } else {
+                          feedback.textContent = `${gameState.currentMonster.name}이(가) 저항합니다. 다시 시도하세요!`;
+                          updateCaptureBallSelection();
+                          document.getElementById("captureWholeInput").value = "";
+                          document.getElementById("captureNumeratorInput").value = "";
+                          document.getElementById("captureDenominatorInput").value = "";
+                          document.getElementById("captureWholeInput").focus();
+                          generateCaptureQuiz();
+                          document.getElementById('captureSubmitBtn').disabled = false;
+                      }
+                  }, 1500);
               }
-            }, 1500);
-          }
-        }, 1500);
+          }, 1500);
       } else {
-        feedback.textContent = `문제가 틀렸습니다. 볼이 엉뚱한 곳으로 날아가버렸습니다.`;
-        feedback.className = 'feedback incorrect';
-        feedback.style.display = 'block';
-        setTimeout(() => {
-          const escapeChance = Math.random() * 100;
-          if (escapeChance <= 8) {
-            showNotification(`💨 ${gameState.currentMonster.name}이(가) 기회를 틈타 도망쳤습니다!`);
-            resetCapture();
-          } else {
-            updateCaptureBallSelection();
-            document.getElementById("captureWholeInput").value = "";
-            document.getElementById("captureNumeratorInput").value = "";
-            document.getElementById("captureDenominatorInput").value = "";
-            document.getElementById("captureWholeInput").focus();
-            document.getElementById('captureSubmitBtn').disabled = false;
-          }
-        }, 1500);
+          feedback.textContent = `문제가 틀렸습니다. 볼이 엉뚱한 곳으로 날아가버렸습니다.`;
+          feedback.className = 'feedback incorrect';
+          feedback.style.display = 'block';
+          setTimeout(() => {
+              const escapeChance = Math.random() * 100;
+              if (escapeChance <= 40) {
+                  showNotification(`💨 ${gameState.currentMonster.name}이(가) 기회를 틈타 도망쳤습니다!`);
+                  resetCapture();
+              } else {
+                  updateCaptureBallSelection();
+                  document.getElementById("captureWholeInput").value = "";
+                  document.getElementById("captureNumeratorInput").value = "";
+                  document.getElementById("captureDenominatorInput").value = "";
+                  document.getElementById("captureWholeInput").focus();
+                  document.getElementById('captureSubmitBtn').disabled = false;
+              }
+          }, 1500);
       }
       saveData();
-    }
+  }
 
     function captureSuccess() {
       // 이미 포획한 몬스터인지 체크
